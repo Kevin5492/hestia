@@ -37,7 +37,7 @@ public class OrderController {
         }
     }
 
-    @PostMapping("path")
+    @PostMapping("path2")
     public OrderReponse findOrdersUser(@RequestBody String entity) {
 
         return new OrderReponse(true, null, null);

@@ -50,11 +50,20 @@ public class OrderService {
 		System.out.println("timeMinusTwoMinutes" + timeMinusTwoMinutes);
 		System.out.println("currentTime" + currentTime);
 
-		// List<Order> unpaidOrders = orderRepo.findUnpaidOrders(timeMinusTwoMinutes);
+		List<Order> unpaidOrders = orderRepo.findUnpaidOrders(timeMinusTwoMinutes);
+
+		for (Order unpaidOrder : unpaidOrders) {
+			for (OrderDetails orderDetail : unpaidOrder.getOrderDetails()) {
+				RoomAvailableDate roomAvailableDate = orderDetail.getRoomAvailableDate();
+				roomAvailableDate.setRoomSum(roomAvailableDate.getRoomSum() + 1);
+				// 訂單被取消後要把房間加回去
+				roomADRepo.save(roomAvailableDate);
+			}
+		}
 		State uppaidState = stateRepo.findById(30).get(); // 找到未付款狀態
 		State uppaidCancelState = stateRepo.findById(33).get(); // 找到未付款取消
 
-		roomADRepo.updateRoomSum(timeMinusTwoMinutes, uppaidState);// 把房間加回去
+		// roomADRepo.updateRoomSum(timeMinusTwoMinutes, uppaidState);// 把房間加回去
 
 		orderRepo.updateUnpaidOrderState(timeMinusTwoMinutes, uppaidState, uppaidCancelState);// 更新所有未付款訂單
 
@@ -77,11 +86,13 @@ public class OrderService {
 		// }
 	}
 
+	@Transactional
 	public boolean updateOrderStateToSuccess(Integer orderId) {// 完成付款 把狀態改為成功
 		try {
 			// 確認訂單是否存在
 			Optional<Order> orderOptional = orderRepo.findById(orderId);
 			if (orderOptional.isEmpty()) {
+				System.out.println("is empty");
 				return false;
 			}
 
@@ -90,9 +101,11 @@ public class OrderService {
 
 			// 更新訂單及其詳細信息的狀態
 			Order order = orderOptional.get();
+			System.out.println("order id: " + order.getOrderId());
 			order.setState(state);
 			for (OrderDetails orderDetail : order.getOrderDetails()) {
 				orderDetail.setState(state);
+				orderDetailsRepo.save(orderDetail);
 			}
 
 			// 保存訂單（會自動級聯保存 OrderDetails）
@@ -102,6 +115,7 @@ public class OrderService {
 
 		} catch (Exception e) {
 			// 記錄錯誤，避免無處理的例外
+			e.printStackTrace();
 			return false;
 		}
 	}

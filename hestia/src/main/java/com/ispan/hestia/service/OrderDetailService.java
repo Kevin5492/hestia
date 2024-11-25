@@ -42,6 +42,8 @@ public class OrderDetailService {
             System.out.println("currentTime" + currentTime);
             return false;
         }
+        System.out.println("orderDate" + orderDate);
+        System.out.println("currentTime" + currentTime);
         return true;
     }
 
