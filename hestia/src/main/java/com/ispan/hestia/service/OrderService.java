@@ -51,24 +51,30 @@ public class OrderService {
 		System.out.println("timeMinusTwoMinutes" + timeMinusTwoMinutes);
 		System.out.println("currentTime" + currentTime);
 
-		List<Order> unpaidOrders = orderRepo.findUnpaidOrders(timeMinusTwoMinutes);
-		State state = stateRepo.findById(33).get();
+		// List<Order> unpaidOrders = orderRepo.findUnpaidOrders(timeMinusTwoMinutes);
+		State uppaidState = stateRepo.findById(30).get(); // 找到未付款狀態
+		State uppaidCancelState = stateRepo.findById(33).get(); // 找到未付款取消
+		roomADRepo.updateRoomSum(timeMinusTwoMinutes, uppaidState);// 把房間加回去
 
-		for (Order unpaidOrder : unpaidOrders) {
-			unpaidOrder.setState(state);
+		orderRepo.updateUnpaidOrderState(timeMinusTwoMinutes, uppaidState, uppaidCancelState);// 更新所有未付款訂單
 
-			Set<OrderDetails> orderDetails = unpaidOrder.getOrderDetails();
-			for (OrderDetails orderDetail : orderDetails) {
-				RoomAvailableDate roomAvailableDate = orderDetail.getRoomAvailableDate();
-				roomAvailableDate.setRoomSum(roomAvailableDate.getRoomSum() + 1);
-				// 訂單被取消後要把房間加回去
-				roomADRepo.save(roomAvailableDate);
+		orderDetailsRepo.updateUnpaidOrderDetailsState(timeMinusTwoMinutes, uppaidState, uppaidCancelState); // 更新所有未付款詳細訂單
 
-				orderDetail.setState(state);
-				orderDetailsRepo.save(orderDetail);
-			}
-			orderRepo.save(unpaidOrder);
-		}
+		// for (Order unpaidOrder : unpaidOrders) {
+		// unpaidOrder.setState(state);
+
+		// Set<OrderDetails> orderDetails = unpaidOrder.getOrderDetails();
+		// for (OrderDetails orderDetail : orderDetails) {
+		// RoomAvailableDate roomAvailableDate = orderDetail.getRoomAvailableDate();
+		// roomAvailableDate.setRoomSum(roomAvailableDate.getRoomSum() + 1);
+		// // 訂單被取消後要把房間加回去
+		// roomADRepo.save(roomAvailableDate);
+
+		// orderDetail.setState(state);
+		// orderDetailsRepo.save(orderDetail);
+		// }
+		// orderRepo.save(unpaidOrder);
+		// }
 	}
 
 	public boolean updateOrderStateToSuccess(Integer orderId) {// 完成付款 把狀態改為成功
@@ -178,8 +184,11 @@ public class OrderService {
 				return false;
 			}
 			Order order = orderOptional.get();
-			State state = stateRepo.findById(34).get();// 找到申請退款的狀態
-			order.setState(state);
+			State successState = stateRepo.findById(38).get();// 找到完成的狀態
+			State applyingRefundState = stateRepo.findById(34).get();// 找到申請退款的狀態
+			order.setState(applyingRefundState);
+			orderDetailsRepo.updateOrderDetailsState(orderId, successState, applyingRefundState); // 將相應的OrderDetail
+																									// 改為申請退款
 			orderRepo.save(order);
 			return true;
 		} catch (Exception e) {
@@ -196,8 +205,10 @@ public class OrderService {
 				return false;
 			}
 			Order order = orderOptional.get();
-			State state = stateRepo.findById(35).get();// 找到退款中的狀態
-			order.setState(state);
+			State applyingRefundState = stateRepo.findById(34).get(); // 找到申請退款的狀態
+			State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
+			order.setState(refundingState);
+			orderDetailsRepo.updateOrderDetailsState(orderId, applyingRefundState, refundingState);
 			orderRepo.save(order);
 			return true;
 		} catch (Exception e) {
@@ -220,8 +231,10 @@ public class OrderService {
 			orderRefundRecord.setDate(new Date());
 			orderRefundRecord.setOrder(order);
 			orrRepo.save(orderRefundRecord);
-			State state = stateRepo.findById(38).get();// 把狀態變回成功
-			order.setState(state);
+			State applyingRefundState = stateRepo.findById(34).get(); // 找到申請退款的狀態
+			State successState = stateRepo.findById(38).get();// 把狀態變回成功
+			order.setState(successState);
+			orderDetailsRepo.updateOrderDetailsState(orderId, applyingRefundState, successState);
 			orderRepo.save(order);
 			return true;
 		} catch (Exception e) {

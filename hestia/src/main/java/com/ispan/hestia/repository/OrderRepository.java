@@ -4,11 +4,13 @@ import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ispan.hestia.dao.OrderDAO;
 import com.ispan.hestia.model.Order;
+import com.ispan.hestia.model.State;
 
 public interface OrderRepository extends JpaRepository<Order, Integer>, OrderDAO {
 	@Query("from Order o join o.state s where s.stateId = 30 and o.date < :timeMinusTwoMinutes")
@@ -16,6 +18,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, OrderDAO
 
 	@Query("select date from Order where orderId = :orderId")
 	public Date checkOrderDate(@Param("orderId") int orderId);
+
+	@Modifying
+	@Query("UPDATE Order o SET o.state = :postState WHERE o.date < :timeMinusTwoMinutes AND o.state = :preState")
+	int updateUnpaidOrderState(@Param("timeMinusTwoMinutes") Date timeMinusTwoMinutes,
+			@Param("preState") State preState,
+			@Param("postState") State postState);
 	// @Query()
 	// public void completeThePurchase(Integer orderId);
 

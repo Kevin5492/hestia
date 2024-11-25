@@ -1,5 +1,7 @@
 package com.ispan.hestia.repository;
 
+import java.util.Date;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,4 +17,11 @@ public interface OrderDetailsRepository extends JpaRepository<OrderDetails, Inte
     int updateOrderDetailsState(@Param("orderId") Integer orderId,
             @Param("preState") State preState,
             @Param("postState") State postState);
+
+    @Modifying
+    @Query("UPDATE OrderDetails od SET od.state = :postState WHERE od.order.date < :timeMinusTwoMinutes AND od.state = :preState")
+    int updateUnpaidOrderDetailsState(@Param("timeMinusTwoMinutes") Date timeMinusTwoMinutes,
+            @Param("preState") State preState,
+            @Param("postState") State postState);
+
 }
