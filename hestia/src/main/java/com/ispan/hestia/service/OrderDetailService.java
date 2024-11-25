@@ -48,26 +48,26 @@ public class OrderDetailService {
     }
 
     @Transactional
-    public boolean autoRefundOrderDetails(Integer orderRoomId) {
+    public boolean autoRefundOrderDetails(Integer orderRoomId) { // 手動退款也可以用這個
         Optional<OrderDetails> odOptional = orderDetailsRepo.findById(orderRoomId);
         if (odOptional.isEmpty()) {
             return false;
         }
         OrderDetails orderDetails = odOptional.get();
-        State successState = stateRepo.findById(38).get();// 找到完成的狀態
+        // State successState = stateRepo.findById(38).get();// 找到完成的狀態
         State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
-        boolean statesCheck = true;
+        boolean stateCheck = true;
         Order order = orderDetails.getOrder();
         try {
             orderDetails.setState(refundingState);
-            for (OrderDetails singleOrderDetails : order.getOrderDetails()) {
-                if (!singleOrderDetails.getState().equals(refundingState)) {
-                    statesCheck = false;
+            for (OrderDetails singleOrderDetail : order.getOrderDetails()) {
+                if (!singleOrderDetail.getState().equals(refundingState)) {
+                    stateCheck = false;
                     break;
                 }
 
             }
-            if (statesCheck) {
+            if (stateCheck) {
                 order.setState(refundingState);
             }
             return true;
@@ -78,4 +78,63 @@ public class OrderDetailService {
         }
 
     }
+
+    @Transactional
+    public boolean manualRefundOrderDetail(Integer orderRoomId) {
+        try {
+            Optional<OrderDetails> odOptional = orderDetailsRepo.findById(orderRoomId);
+            if (odOptional.isEmpty()) {
+                return false;
+            }
+            OrderDetails orderDetails = odOptional.get();
+            // State successState = stateRepo.findById(38).get();// 找到完成的狀態
+            State applyingRefundState = stateRepo.findById(34).get();// 找到申請退款的狀態
+            boolean stateCheck = true;
+            Order order = orderDetails.getOrder();
+            for (OrderDetails singleOrderDetail : order.getOrderDetails()) {
+                if (!singleOrderDetail.getState().equals(applyingRefundState)) {
+                    stateCheck = false;
+                    break;
+                }
+            }
+            if (stateCheck) {
+                order.setState(applyingRefundState);
+            }
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Transactional // 申請退款 手動拒絕退款
+    public boolean manualRefundDeclinedOrderDetails(Integer orderRoomId) {
+        try {
+            Optional<OrderDetails> odOptional = orderDetailsRepo.findById(orderRoomId);
+            if (odOptional.isEmpty()) {
+                return false;
+            }
+            OrderDetails orderDetails = odOptional.get();
+            // State successState = stateRepo.findById(38).get();// 找到完成的狀態
+            State successState = stateRepo.findById(38).get();// 把狀態變回成功
+            boolean stateCheck = true;
+            Order order = orderDetails.getOrder();
+            for (OrderDetails singleOrderDetail : order.getOrderDetails()) {
+                if (!singleOrderDetail.getState().equals(successState)) {
+                    stateCheck = false;
+                    break;
+                }
+            }
+            if (stateCheck) {
+                order.setState(successState);
+            }
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
