@@ -40,7 +40,6 @@ public class OrderService {
 	private OrderRefundRecordRepository orrRepo;
 
 	@Transactional
-	@Scheduled(fixedRate = 1000)
 	public void automaticallyCancelOrders() {// 定期將未付款的訂單改為未付款取消 之後可以把更新OrderDetail改寫
 		Date currentTime = new Date();
 		// Calendar calendar = Calendar.getInstance();
@@ -54,6 +53,7 @@ public class OrderService {
 		// List<Order> unpaidOrders = orderRepo.findUnpaidOrders(timeMinusTwoMinutes);
 		State uppaidState = stateRepo.findById(30).get(); // 找到未付款狀態
 		State uppaidCancelState = stateRepo.findById(33).get(); // 找到未付款取消
+
 		roomADRepo.updateRoomSum(timeMinusTwoMinutes, uppaidState);// 把房間加回去
 
 		orderRepo.updateUnpaidOrderState(timeMinusTwoMinutes, uppaidState, uppaidCancelState);// 更新所有未付款訂單
