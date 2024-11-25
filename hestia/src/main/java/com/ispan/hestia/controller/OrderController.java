@@ -26,13 +26,21 @@ public class OrderController {
         try {
             JSONObject obj = new JSONObject(entity);
             Integer orderId = obj.isNull("orderId") ? null : obj.getInt("orderId");
-            orderService.updateOrderStateToSuccess(orderId);
+            if (orderService.updateOrderStateToSuccess(orderId)) {
+                return new OrderReponse(true, "付款成功", null);
+            }
+            return new OrderReponse(false, "付款失敗", null);
 
-            return new OrderReponse(null);
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return new OrderReponse(false, "付款失敗", null);
         }
+    }
+
+    @PostMapping("path")
+    public OrderReponse findOrdersUser(@RequestBody String entity) {
+
+        return new OrderReponse(true, null, null);
     }
 
     // String startSearchDateStr = obj.isNull("startSearchDate") ? null :
