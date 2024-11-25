@@ -41,7 +41,7 @@ public class OrderService {
 
 	@Transactional
 	@Scheduled(fixedRate = 1000)
-	public void automaticallyCancelOrders() {// 定期將未付款的訂單改為未付款取消
+	public void automaticallyCancelOrders() {// 定期將未付款的訂單改為未付款取消 之後可以把更新OrderDetail改寫
 		Date currentTime = new Date();
 		// Calendar calendar = Calendar.getInstance();
 		// calendar.setTime(currentTime);
@@ -156,8 +156,12 @@ public class OrderService {
 				return false;
 			}
 			Order order = orderOptional.get();
-			State state = stateRepo.findById(35).get();// 找到退款中的狀態
-			order.setState(state);
+			State successState = stateRepo.findById(38).get();// 找到完成的狀態
+			State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
+
+			order.setState(refundingState);
+			int updated = orderDetailsRepo.updateOrderDetailsState(orderId, successState, refundingState);
+			System.out.println("共更新了 " + updated + " 筆");
 			orderRepo.save(order);
 			return true;
 		} catch (Exception e) {
