@@ -24,4 +24,7 @@ public interface OrderDetailsRepository extends JpaRepository<OrderDetails, Inte
             @Param("preState") State preState,
             @Param("postState") State postState);
 
+    @Query("select od.order.date from OrderDetails od where orderRoomId = :orderRoomId")
+    public Date checkOrderDate(@Param("orderRoomId") int orderRoomId);
+
 }
