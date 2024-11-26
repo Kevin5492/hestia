@@ -33,6 +33,7 @@ public class OrderDAOImpl implements OrderDAO {
 			Integer providerId) {
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
 		CriteriaQuery<SalesNumbersDTO> criteriaQuery = criteriaBuilder.createQuery(SalesNumbersDTO.class);
+
 		Root<Order> orderRoot = criteriaQuery.from(Order.class);
 		Join<Order, OrderDetails> odJoin = orderRoot.join("orderDetails");
 		Join<OrderDetails, RoomAvailableDate> radJoin = odJoin.join("roomAvailableDate");
@@ -58,13 +59,13 @@ public class OrderDAOImpl implements OrderDAO {
 		Predicate datePredicate = criteriaBuilder.conjunction(); // 初始條件為 TRUE
 		if (startDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,
-					criteriaBuilder.greaterThanOrEqualTo(orderRoot.get("date"), startDate));
+					criteriaBuilder.greaterThanOrEqualTo(radJoin.get("availableDates"), startDate));
 		}
 		if (endDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,
-					criteriaBuilder.lessThanOrEqualTo(orderRoot.get("date"), endDate));
+					criteriaBuilder.lessThanOrEqualTo(radJoin.get("availableDates"), endDate));
 		}
-		criteriaQuery.where(criteriaBuilder.and(datePredicate, providerPredicate));
+		criteriaQuery.where(criteriaBuilder.and(datePredicate, providerPredicate, statePredicate));
 
 		criteriaQuery.groupBy(monthExpression);
 

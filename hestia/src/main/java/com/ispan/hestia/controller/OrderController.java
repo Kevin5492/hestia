@@ -208,9 +208,29 @@ public class OrderController {
             }
         }
 
+        @PostMapping("/salesNumber")
+        public OrderReponse postMethodName(@RequestBody String entity) {
+            try {
+                JSONObject obj = new JSONObject(entity);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                Integer providerId = obj.isNull("providerId") ? null : obj.getInt("providerId");
+
+                Date startSearchDate = obj.isNull("startSearchDate") ? null
+                        : java.sql.Timestamp.valueOf(LocalDate.parse(obj.getString("startSearchDate"),
+                                formatter).atStartOfDay());
+                Date endSearchDate = obj.isNull("endSearchDate") ? null
+                        : java.sql.Timestamp.valueOf(LocalDate.parse(obj.getString("endSearchDate"),
+                                formatter).atStartOfDay());
+                return new OrderReponse(true, "查詢成功",
+                        orderService.getMonthlySalesAndOrders(startSearchDate, endSearchDate, providerId), null, null);
+            } catch (Exception e) {
+                return new OrderReponse(false, "查詢失敗", null, null, null);
+            }
+
+        }
+
     }
 }
-
 // @PostMapping("/providerOrders/acceptRefund")
 // public OrderReponse manualRefundAccepted(@RequestBody String entity){
 
