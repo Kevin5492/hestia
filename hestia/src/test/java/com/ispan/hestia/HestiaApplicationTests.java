@@ -28,7 +28,8 @@ class HestiaApplicationTests {
 
 	@Test
 	void testFindOrderForUser() {
-		System.out.println(orderDetailsRepo.findOrderDetailsByOrderId(5));
+		// System.out.println(orderDetailsRepo.findOrderDetailsByOrderId(5));
+		System.out.println(orderService.getMonthlySalesAndOrders(null, null, 1));
 		// System.out.println(orderService.updateOrderStateToSuccess(3));
 		// System.out.println(orderService.checkIfAutoRefundable(4));
 		// System.out.println(orderService.manualRefundDeclined(4));

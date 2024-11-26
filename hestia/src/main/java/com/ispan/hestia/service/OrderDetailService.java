@@ -3,7 +3,6 @@ package com.ispan.hestia.service;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ispan.hestia.dto.OrderDetailsDTO;
 import com.ispan.hestia.model.Order;
 import com.ispan.hestia.model.OrderDetails;
+import com.ispan.hestia.model.OrderDetailsRefundRecord;
 import com.ispan.hestia.model.State;
+import com.ispan.hestia.repository.OrderDetailsRefundRecordRepository;
 import com.ispan.hestia.repository.OrderDetailsRepository;
 import com.ispan.hestia.repository.OrderRepository;
 import com.ispan.hestia.repository.StateRepository;
@@ -28,6 +29,9 @@ public class OrderDetailService {
 
     @Autowired
     private StateRepository stateRepo;
+
+    @Autowired
+    private OrderDetailsRefundRecordRepository odrrRepo;
 
     @Transactional
     public boolean checkIfAutoRefundable(Integer orderRoomId) {
@@ -71,6 +75,12 @@ public class OrderDetailService {
             }
             if (stateCheck) {
                 order.setState(postState);
+            }
+            if (postStateId == 38) {
+                OrderDetailsRefundRecord odrr = new OrderDetailsRefundRecord();
+                odrr.setOrderDetails(orderDetails);
+                odrr.setDate(new Date());
+                odrrRepo.save(odrr);
             }
             return true;
 
@@ -162,6 +172,7 @@ public class OrderDetailService {
     // if (stateCheck) {
     // order.setState(successState);
     // }
+
     // return true;
 
     // } catch (Exception e) {

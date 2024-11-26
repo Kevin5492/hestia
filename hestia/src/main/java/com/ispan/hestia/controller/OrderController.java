@@ -222,7 +222,7 @@ public class OrderController {
         }
 
         @PostMapping("/salesNumber")
-        public OrderReponse postMethodName(@RequestBody String entity) {
+        public OrderReponse checkSalesNumber(@RequestBody String entity) {
             try {
                 JSONObject obj = new JSONObject(entity);
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
