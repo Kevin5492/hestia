@@ -1,7 +1,6 @@
 package com.ispan.hestia.controller;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
@@ -19,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ispan.hestia.dto.OrderReponse;
 import com.ispan.hestia.dto.ProviderDTO;
 import com.ispan.hestia.dto.UserOrderDTO;
+import com.ispan.hestia.service.OrderDetailService;
 import com.ispan.hestia.service.OrderService;
 
 @RestController
@@ -32,6 +32,19 @@ public class OrderController {
 
         @Autowired
         private OrderService orderService;
+
+        @Autowired
+        private OrderDetailService orderDetailsService;
+
+        @GetMapping("/findOrder/{id}")
+        public OrderReponse findOrder(@PathVariable("id") Integer orderId) {
+            if (orderId != null) {
+                if (orderService.checkIfOrderExist(orderId)) {
+                    return new OrderReponse(true, "查詢成功", null, null, null, orderDetailsService.findOrder(orderId));
+                }
+            }
+            return new OrderReponse(false, "查詢失敗", null, null, null, null);
+        }
 
         @PostMapping("/find")
         public OrderReponse findUserOrder(@RequestBody String entity) {
@@ -53,10 +66,10 @@ public class OrderController {
                 List<UserOrderDTO> result = orderService.findUserOrders(startSearchDate, endSearchDate, userId,
                         stateId);
 
-                return new OrderReponse(true, "查詢成功", null, result, null);
+                return new OrderReponse(true, "查詢成功", null, result, null, null);
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, "查詢失敗", null, null, null);
+                return new OrderReponse(false, "查詢失敗", null, null, null, null);
             }
         }
 
@@ -70,22 +83,22 @@ public class OrderController {
                 if (result) {
                     mssg = "付款成功";
                 }
-                return new OrderReponse(result, mssg, null, null, null);
+                return new OrderReponse(result, mssg, null, null, null, null);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, mssg, null, null, null);
+                return new OrderReponse(false, mssg, null, null, null, null);
             }
         }
 
         @GetMapping("/refund/check/{id}")
-        public OrderReponse findOrdersUser(@PathVariable Integer orderId) {
+        public OrderReponse findOrdersUser(@PathVariable("id") Integer orderId) {
             boolean refundable = orderService.checkIfAutoRefundable(orderId);
             String mssg = "不在退款區間內，可以手動申請退款";
             if (refundable) {
                 mssg = "在退款區間內，可以直接退款";
             }
-            return new OrderReponse(refundable, mssg, null, null, null);
+            return new OrderReponse(refundable, mssg, null, null, null, null);
         }
 
         @PostMapping("/refund/autoRefund")
@@ -101,11 +114,11 @@ public class OrderController {
                     mssg = "退款成功";
                 }
 
-                return new OrderReponse(false, mssg, null, null, null);
+                return new OrderReponse(true, mssg, null, null, null, null);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, mssg, null, null, null);
+                return new OrderReponse(false, mssg, null, null, null, null);
             }
         }
 
@@ -122,11 +135,11 @@ public class OrderController {
                     mssg = "退款申請成功送出";
                 }
 
-                return new OrderReponse(result, mssg, null, null, null);
+                return new OrderReponse(result, mssg, null, null, null, null);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, mssg, null, null, null);
+                return new OrderReponse(false, mssg, null, null, null, null);
             }
         }
 
@@ -152,10 +165,10 @@ public class OrderController {
                     mssg = "成功接受退款";
                 }
 
-                return new OrderReponse(result, mssg, null, null, null);
+                return new OrderReponse(result, mssg, null, null, null, null);
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, mssg, null, null, null);
+                return new OrderReponse(false, mssg, null, null, null, null);
             }
         }
 
@@ -172,11 +185,11 @@ public class OrderController {
                     mssg = "成功拒絕退款";
                 }
 
-                return new OrderReponse(result, mssg, null, null, null);
+                return new OrderReponse(result, mssg, null, null, null, null);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, mssg, null, null, null);
+                return new OrderReponse(false, mssg, null, null, null, null);
             }
 
         }
@@ -201,10 +214,10 @@ public class OrderController {
                 List<ProviderDTO> result = orderService.findProviderOrders(startSearchDate, endSearchDate, providerId,
                         stateId);
 
-                return new OrderReponse(true, "查詢成功", null, null, result);
+                return new OrderReponse(true, "查詢成功", null, null, result, null);
             } catch (Exception e) {
                 e.printStackTrace();
-                return new OrderReponse(false, "查詢失敗", null, null, null);
+                return new OrderReponse(false, "查詢失敗", null, null, null, null);
             }
         }
 
@@ -222,9 +235,10 @@ public class OrderController {
                         : java.sql.Timestamp.valueOf(LocalDate.parse(obj.getString("endSearchDate"),
                                 formatter).atStartOfDay());
                 return new OrderReponse(true, "查詢成功",
-                        orderService.getMonthlySalesAndOrders(startSearchDate, endSearchDate, providerId), null, null);
+                        orderService.getMonthlySalesAndOrders(startSearchDate, endSearchDate, providerId), null, null,
+                        null);
             } catch (Exception e) {
-                return new OrderReponse(false, "查詢失敗", null, null, null);
+                return new OrderReponse(false, "查詢失敗", null, null, null, null);
             }
 
         }

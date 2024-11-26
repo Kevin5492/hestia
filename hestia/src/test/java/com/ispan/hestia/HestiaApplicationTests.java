@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.ispan.hestia.dto.UserOrderDTO;
+import com.ispan.hestia.repository.OrderDetailsRepository;
 import com.ispan.hestia.repository.OrderRepository;
 import com.ispan.hestia.service.OrderDetailService;
 import com.ispan.hestia.service.OrderService;
@@ -20,10 +21,14 @@ class HestiaApplicationTests {
 	private OrderService orderService;
 
 	@Autowired
+	private OrderDetailsRepository orderDetailsRepo;
+
+	@Autowired
 	private OrderDetailService orderDetailService;
 
 	@Test
 	void testFindOrderForUser() {
+		System.out.println(orderDetailsRepo.findOrderDetailsByOrderId(5));
 		// System.out.println(orderService.updateOrderStateToSuccess(3));
 		// System.out.println(orderService.checkIfAutoRefundable(4));
 		// System.out.println(orderService.manualRefundDeclined(4));

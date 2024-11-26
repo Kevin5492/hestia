@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ispan.hestia.dto.OrderDetailsDTO;
 import com.ispan.hestia.dto.ProviderDTO;
 import com.ispan.hestia.dto.SalesNumbersDTO;
 import com.ispan.hestia.dto.UserOrderDTO;
@@ -139,7 +140,16 @@ public class OrderService {
 	// orderRepo.save(order);
 
 	// }
+
 	// }
+
+	@Transactional
+	public boolean checkIfOrderExist(Integer orderId) {
+		if (orderRepo.findById(orderId).isPresent()) {
+			return true;
+		}
+		return false;
+	}
 
 	@Transactional // 按照月份提供收入報表
 	public List<SalesNumbersDTO> getMonthlySalesAndOrders(Date startDate, Date endDate, Integer providerId) {
