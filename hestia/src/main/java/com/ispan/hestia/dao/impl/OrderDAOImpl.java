@@ -1,11 +1,12 @@
 package com.ispan.hestia.dao.impl;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import com.ispan.hestia.dao.OrderDAO;
+import com.ispan.hestia.dto.ProviderDTO;
 import com.ispan.hestia.dto.SalesNumbersDTO;
+import com.ispan.hestia.dto.UserOrderDTO;
 import com.ispan.hestia.model.Order;
 import com.ispan.hestia.model.OrderDetails;
 import com.ispan.hestia.model.Provider;
@@ -87,7 +88,6 @@ public class OrderDAOImpl implements OrderDAO {
 
 		Expression<String> monthExpression = criteriaBuilder.function("FORMAT", String.class, orderRoot.get("date"),
 				criteriaBuilder.literal("yyyy-MM"));
-
 		criteriaQuery.multiselect(monthExpression.alias("month"),
 				criteriaBuilder.sum(odJoin.get("purchasedPrice")).alias("totalSales"),
 				criteriaBuilder.count(odJoin.get("orderRoomId")).alias("totalOrders"));
@@ -114,13 +114,13 @@ public class OrderDAOImpl implements OrderDAO {
 	}
 
 	@Override
-	public List<Object[]> findOrderForUser(Date startDate, Date endDate, Integer userId, Integer stateId) { // List<Object[]>
-																											// 會回傳userID
-																											// availableDates
-																											// checkInDate
-																											// purchasedPrice
+	public List<UserOrderDTO> findOrderForUser(Date startDate, Date endDate, Integer userId, Integer stateId) { // List<Object[]>
+		// 會回傳userID
+		// availableDates
+		// checkInDate
+		// purchasedPrice
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-		CriteriaQuery<Object[]> criteriaQuery = criteriaBuilder.createQuery(Object[].class);
+		CriteriaQuery<UserOrderDTO> criteriaQuery = criteriaBuilder.createQuery(UserOrderDTO.class);
 
 		Root<Order> orderRoot = criteriaQuery.from(Order.class);
 		Join<Order, OrderDetails> odJoin = orderRoot.join("orderDetails");
@@ -131,16 +131,33 @@ public class OrderDAOImpl implements OrderDAO {
 		Join<Room, Provider> providerJoin = roomJoin.join("provider");
 		Join<Provider, User> providerUserNameJoin = providerJoin.join("user");
 
-		criteriaQuery.multiselect(orderRoot.get("orderId"), radJoin.get("availableDates"), odJoin.get("checkInDate"),
-				odJoin.get("purchasedPrice").alias("price"),
-				// userJoin.get("name").alias("username"),
-				providerUserNameJoin.get("name").alias("providerName"), roomJoin.get("roomName"),
-				stateJoin.get("stateContent").alias("state"));
+		// criteriaQuery.select(criteriaBuilder.construct(null));
+		// criteriaQuery.multiselect(orderRoot.get("orderId"),
+		// radJoin.get("availableDates"), odJoin.get("checkInDate"),
+		// odJoin.get("purchasedPrice").alias("price"),
+		// // userJoin.get("name").alias("username"),
+		// providerUserNameJoin.get("name").alias("providerName"),
+		// roomJoin.get("roomName"),
+		// stateJoin.get("stateContent").alias("state"));
+
+		criteriaQuery.select(criteriaBuilder.construct(
+				UserOrderDTO.class,
+				orderRoot.get("orderId").alias("orderId"),
+				radJoin.get("availableDates").alias("availableDates"),
+				odJoin.get("checkInDate").alias("checkInDate"),
+				odJoin.get("purchasedPrice").alias("purchasedPrice"),
+				providerUserNameJoin.get("name").alias("providerName"),
+				roomJoin.get("roomName").alias("roomName"),
+				stateJoin.get("stateContent").alias("state")));
+
 		Predicate userPredicate = criteriaBuilder.equal(userJoin.get("userId"), userId);
 
-		Predicate statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), stateId);
+		Predicate statePredicate = criteriaBuilder.conjunction();
 		Predicate datePredicate = criteriaBuilder.conjunction(); // 初始化為真條件
 
+		if (stateId != null) {
+			statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), stateId);
+		}
 		// 如果 startDate 不為空，加入 "大於或等於" 條件
 		if (startDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,
@@ -158,10 +175,10 @@ public class OrderDAOImpl implements OrderDAO {
 	}
 
 	@Override
-	public List<Object[]> findOrderForProvider(Date startDate, Date endDate, Integer providerId, Integer stateId) {
+	public List<ProviderDTO> findOrderForProvider(Date startDate, Date endDate, Integer providerId, Integer stateId) {
 
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-		CriteriaQuery<Object[]> criteriaQuery = criteriaBuilder.createQuery(Object[].class);
+		CriteriaQuery<ProviderDTO> criteriaQuery = criteriaBuilder.createQuery(ProviderDTO.class);
 
 		Root<Order> orderRoot = criteriaQuery.from(Order.class);
 		Join<Order, OrderDetails> odJoin = orderRoot.join("orderDetails");
@@ -172,14 +189,29 @@ public class OrderDAOImpl implements OrderDAO {
 		Join<Room, Provider> providerJoin = roomJoin.join("provider");
 		Join<Provider, User> providerUserNameJoin = providerJoin.join("user");
 
-		criteriaQuery.multiselect(orderRoot.get("orderId"), radJoin.get("availableDates"), odJoin.get("checkInDate"),
-				odJoin.get("purchasedPrice").alias("price"), userJoin.get("name").alias("username"),
-				providerUserNameJoin.get("name"), stateJoin.get("stateContent").alias("state"));
+		// criteriaQuery.multiselect(orderRoot.get("orderId"),
+		// radJoin.get("availableDates"), odJoin.get("checkInDate"),
+		// odJoin.get("purchasedPrice").alias("price"),
+		// userJoin.get("name").alias("username"),
+		// providerUserNameJoin.get("name"),
+		// stateJoin.get("stateContent").alias("state"));
 
+		criteriaQuery.select(criteriaBuilder.construct(
+				ProviderDTO.class,
+				orderRoot.get("orderId").alias("orderId"),
+				radJoin.get("availableDates").alias("availableDates"),
+				odJoin.get("checkInDate").alias("checkInDate"),
+				odJoin.get("purchasedPrice").alias("purchasedPrice"),
+				userJoin.get("name").alias("userName"),
+				roomJoin.get("roomName").alias("roomName"),
+				stateJoin.get("stateContent").alias("state")));
 		Predicate providerPredicate = criteriaBuilder.equal(providerJoin.get("providerId"), providerId);
-		Predicate statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), stateId);
+		Predicate statePredicate = criteriaBuilder.conjunction();
 		Predicate datePredicate = criteriaBuilder.conjunction(); // 初始化為真條件
 
+		if (stateId != null) {
+			statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), stateId);
+		}
 		// 如果 startDate 不為空，加入 "大於或等於" 條件
 		if (startDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,

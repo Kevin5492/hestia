@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record OrderReponse(
-        boolean updateOrderSuccess,
-        String updateToSuccessMessage,
-        List<SalesNumbersDTO> salesNumbers
-
-) {
+                boolean success,
+                String message,
+                List<SalesNumbersDTO> salesNumbers,
+                List<UserOrderDTO> userOrders,
+                List<ProviderDTO> providerOrders) {
 }

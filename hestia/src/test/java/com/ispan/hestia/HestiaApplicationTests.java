@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.ispan.hestia.dto.UserOrderDTO;
 import com.ispan.hestia.repository.OrderRepository;
 import com.ispan.hestia.service.OrderDetailService;
 import com.ispan.hestia.service.OrderService;
@@ -31,7 +32,9 @@ class HestiaApplicationTests {
 		// System.out.println(orderService.manualRefund(3));checkIfAutoRefundable
 		// System.out.println(orderDetailService.checkIfAutoRefundable(4));
 
-		System.out.println(orderDetailService.autoRefundOrderDetails(9));
+		// System.out.println(orderDetailService.autoRefundOrderDetails(9));
+		// System.out.println(orderService.modifyOrderState(3, 35, 38));
+
 		// List<Object[]> results = orderRepo.getOrderDetailsByUserId(1);
 		// int i = 1;
 		// for(Object[] singleResult:results) {

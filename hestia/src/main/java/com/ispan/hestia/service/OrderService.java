@@ -10,7 +10,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ispan.hestia.dto.ProviderDTO;
 import com.ispan.hestia.dto.SalesNumbersDTO;
+import com.ispan.hestia.dto.UserOrderDTO;
 import com.ispan.hestia.model.Order;
 import com.ispan.hestia.model.OrderDetails;
 import com.ispan.hestia.model.OrderRefundRecord;
@@ -145,12 +147,12 @@ public class OrderService {
 	}
 
 	@Transactional // 查詢使用者訂單
-	public List<Object[]> findUserOrders(Date startDate, Date endDate, Integer userId, Integer stateId) {
+	public List<UserOrderDTO> findUserOrders(Date startDate, Date endDate, Integer userId, Integer stateId) {
 		return orderRepo.findOrderForUser(startDate, endDate, userId, stateId);
 	}
 
 	@Transactional // 查詢房東訂單
-	public List<Object[]> findProviderOrders(Date startDate, Date endDate, Integer providerId, Integer stateId) {
+	public List<ProviderDTO> findProviderOrders(Date startDate, Date endDate, Integer providerId, Integer stateId) {
 		return orderRepo.findOrderForProvider(startDate, endDate, providerId, stateId);
 	}
 
@@ -167,8 +169,8 @@ public class OrderService {
 		return true;
 	}
 
-	@Transactional // 申請退款 並且符合退款資格
-	public boolean autoRefund(Integer orderId) {
+	@Transactional // 修改訂單狀態
+	public boolean modifyOrderState(Integer orderId, Integer preState, Integer postState) {
 		try {
 			// 確認訂單是否存在
 			Optional<Order> orderOptional = orderRepo.findById(orderId);
@@ -176,8 +178,8 @@ public class OrderService {
 				return false;
 			}
 			Order order = orderOptional.get();
-			State successState = stateRepo.findById(38).get();// 找到完成的狀態
-			State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
+			State successState = stateRepo.findById(preState).get();// 找到原本的狀態
+			State refundingState = stateRepo.findById(postState).get();// 找到退款中的狀態
 
 			order.setState(refundingState);
 			int updated = orderDetailsRepo.updateOrderDetailsState(orderId, successState, refundingState);
@@ -189,50 +191,74 @@ public class OrderService {
 		}
 	}
 
-	@Transactional // 申請退款 不符合退款資格 手動提出退款申請
-	public boolean manualRefund(Integer orderId) {
-		try {
-			// 確認訂單是否存在
-			Optional<Order> orderOptional = orderRepo.findById(orderId);
-			if (orderOptional.isEmpty()) {
-				return false;
-			}
-			Order order = orderOptional.get();
-			State successState = stateRepo.findById(38).get();// 找到完成的狀態
-			State applyingRefundState = stateRepo.findById(34).get();// 找到申請退款的狀態
-			order.setState(applyingRefundState);
-			orderDetailsRepo.updateOrderDetailsState(orderId, successState, applyingRefundState); // 將相應的OrderDetail
-																									// 改為申請退款
-			orderRepo.save(order);
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
+	// @Transactional // 申請退款 並且符合退款資格
+	// public boolean autoRefund(Integer orderId) {
+	// try {
+	// // 確認訂單是否存在
+	// Optional<Order> orderOptional = orderRepo.findById(orderId);
+	// if (orderOptional.isEmpty()) {
+	// return false;
+	// }
+	// Order order = orderOptional.get();
+	// State successState = stateRepo.findById(38).get();// 找到完成的狀態
+	// State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
 
-	@Transactional // 申請退款 手動同意退款
-	public boolean manualRefundAccepted(Integer orderId) {
-		try {
-			// 確認訂單是否存在
-			Optional<Order> orderOptional = orderRepo.findById(orderId);
-			if (orderOptional.isEmpty()) {
-				return false;
-			}
-			Order order = orderOptional.get();
-			State applyingRefundState = stateRepo.findById(34).get(); // 找到申請退款的狀態
-			State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
-			order.setState(refundingState);
-			orderDetailsRepo.updateOrderDetailsState(orderId, applyingRefundState, refundingState);
-			orderRepo.save(order);
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
+	// order.setState(refundingState);
+	// int updated = orderDetailsRepo.updateOrderDetailsState(orderId, successState,
+	// refundingState);
+	// orderRepo.save(order);
+	// return true;
+	// } catch (Exception e) {
+	// return false;
+	// }
+	// }
 
-	}
+	// @Transactional // 申請退款 不符合退款資格 手動提出退款申請
+	// public boolean manualRefund(Integer orderId) {
+	// try {
+	// // 確認訂單是否存在
+	// Optional<Order> orderOptional = orderRepo.findById(orderId);
+	// if (orderOptional.isEmpty()) {
+	// return false;
+	// }
+	// Order order = orderOptional.get();
+	// State successState = stateRepo.findById(38).get();// 找到完成的狀態
+	// State applyingRefundState = stateRepo.findById(34).get();// 找到申請退款的狀態
+	// order.setState(applyingRefundState);
+	// orderDetailsRepo.updateOrderDetailsState(orderId, successState,
+	// applyingRefundState); // 將相應的OrderDetail
+	// // 改為申請退款
+	// orderRepo.save(order);
+	// return true;
+	// } catch (Exception e) {
+	// return false;
+	// }
+	// }
+
+	// @Transactional // 申請退款 手動同意退款
+	// public boolean manualRefundAccepted(Integer orderId) {
+	// try {
+	// // 確認訂單是否存在
+	// Optional<Order> orderOptional = orderRepo.findById(orderId);
+	// if (orderOptional.isEmpty()) {
+	// return false;
+	// }
+	// Order order = orderOptional.get();
+	// State applyingRefundState = stateRepo.findById(34).get(); // 找到申請退款的狀態
+	// State refundingState = stateRepo.findById(35).get();// 找到退款中的狀態
+	// order.setState(refundingState);
+	// orderDetailsRepo.updateOrderDetailsState(orderId, applyingRefundState,
+	// refundingState);
+	// orderRepo.save(order);
+	// return true;
+	// } catch (Exception e) {
+	// return false;
+	// }
+
+	// }
 
 	@Transactional // 申請退款 手動拒絕退款
-	public boolean manualRefundDeclined(Integer orderId) {
+	public boolean manualRefundDeclined(Integer orderId, Integer preState, Integer postState) {
 		try {
 			// 確認訂單是否存在
 			Optional<Order> orderOptional = orderRepo.findById(orderId);
@@ -245,8 +271,8 @@ public class OrderService {
 			orderRefundRecord.setDate(new Date());
 			orderRefundRecord.setOrder(order);
 			orrRepo.save(orderRefundRecord);
-			State applyingRefundState = stateRepo.findById(34).get(); // 找到申請退款的狀態
-			State successState = stateRepo.findById(38).get();// 把狀態變回成功
+			State applyingRefundState = stateRepo.findById(preState).get(); // 找到申請退款的狀態
+			State successState = stateRepo.findById(postState).get();// 把狀態變回成功
 			order.setState(successState);
 			orderDetailsRepo.updateOrderDetailsState(orderId, applyingRefundState, successState);
 			orderRepo.save(order);
