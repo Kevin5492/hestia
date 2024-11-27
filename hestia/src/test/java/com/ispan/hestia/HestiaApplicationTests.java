@@ -1,10 +1,11 @@
 package com.ispan.hestia;
 
-import java.util.Date;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 
 import com.ispan.hestia.dto.UserOrderDTO;
 import com.ispan.hestia.repository.OrderDetailsRepository;
@@ -29,7 +30,23 @@ class HestiaApplicationTests {
 	@Test
 	void testFindOrderForUser() {
 		// System.out.println(orderDetailsRepo.findOrderDetailsByOrderId(5));
-		System.out.println(orderService.getMonthlySalesAndOrders(null, null, 1));
+		// System.out.println(orderService.getMonthlySalesAndOrders(null, null, 1));
+		try {
+			Page<UserOrderDTO> results = orderRepo.findOrderForUserPage(null, null, 1, null, null, 0, 10);
+			System.out.println(results.getTotalElements());
+			System.out.println(results.getNumberOfElements());
+			System.out.println(results.getSize());
+			System.out.println(results.getContent());
+			List<UserOrderDTO> resultList = results.getContent();
+			int i = 1;
+			for (UserOrderDTO singleResult : resultList) {
+
+				System.out.println(i + ":" + singleResult.orderId());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 		// System.out.println(orderService.updateOrderStateToSuccess(3));
 		// System.out.println(orderService.checkIfAutoRefundable(4));
 		// System.out.println(orderService.manualRefundDeclined(4));

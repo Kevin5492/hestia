@@ -143,8 +143,15 @@ public class OrderDAOImpl implements OrderDAO {
 		Join<Provider, User> providerUserNameJoin = providerJoin.join("user");
 		Join<Room, City> cityJoin = roomJoin.join("city");
 
-		String search = (searchInput != null && !searchInput.trim().isEmpty()) ? "%" + searchInput.trim() + "%" : null;
-
+		// criteriaQuery.select(criteriaBuilder.construct(null));
+		// criteriaQuery.multiselect(orderRoot.get("orderId"),
+		// radJoin.get("availableDates"), odJoin.get("checkInDate"),
+		// odJoin.get("purchasedPrice").alias("price"),
+		// // userJoin.get("name").alias("username"),
+		// providerUserNameJoin.get("name").alias("providerName"),
+		// roomJoin.get("roomName"),
+		// stateJoin.get("stateContent").alias("state"));
+		String search = "%" + searchInput + "%";
 		criteriaQuery.select(criteriaBuilder.construct(
 				UserOrderDTO.class,
 				orderRoot.get("orderId").alias("orderId"),
@@ -157,42 +164,144 @@ public class OrderDAOImpl implements OrderDAO {
 
 		Predicate userPredicate = criteriaBuilder.equal(userJoin.get("userId"), userId);
 
-		Predicate statePredicate = stateId != null
-				? criteriaBuilder.equal(stateJoin.get("stateId"), stateId)
-				: criteriaBuilder.conjunction();
+		Predicate statePredicate = criteriaBuilder.conjunction();
+		Predicate datePredicate = criteriaBuilder.conjunction(); // 初始化為真條件
+		Predicate roomNamePredicate = criteriaBuilder.conjunction();
+		Predicate cityNamePredicate = criteriaBuilder.conjunction();
+		Predicate addressPredicate = criteriaBuilder.conjunction();
+		Predicate roomContentPredicate = criteriaBuilder.conjunction();
 
-		Predicate datePredicate = criteriaBuilder.conjunction();
+		if (searchInput != null) {
+			roomNamePredicate = criteriaBuilder.like(roomJoin.get("roomName"), search);
+			addressPredicate = criteriaBuilder.like(roomJoin.get("roomAddr"), search);
+			roomContentPredicate = criteriaBuilder.like(roomJoin.get("roomContent"), search);
+			cityNamePredicate = criteriaBuilder.like(cityJoin.get("cityName"), search);
+		}
+
+		if (stateId != null) {
+			statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), stateId);
+		}
+		// 如果 startDate 不為空，加入 "大於或等於" 條件
 		if (startDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,
 					criteriaBuilder.greaterThanOrEqualTo(orderRoot.get("date"), startDate));
 		}
+
+		// 如果 endDate 不為空，加入 "小於或等於" 條件
 		if (endDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,
 					criteriaBuilder.lessThanOrEqualTo(orderRoot.get("date"), endDate));
 		}
+		Predicate orPredicate = criteriaBuilder.or(
+				roomNamePredicate,
+				cityNamePredicate,
+				addressPredicate,
+				roomContentPredicate);
 
-		Predicate searchPredicate = criteriaBuilder.conjunction();
-		if (search != null) {
-			searchPredicate = criteriaBuilder.or(
-					criteriaBuilder.like(roomJoin.get("roomName"), search),
-					criteriaBuilder.like(cityJoin.get("cityName"), search),
-					criteriaBuilder.like(roomJoin.get("roomAddr"), search),
-					criteriaBuilder.like(roomJoin.get("roomContent"), search));
-		}
+		criteriaQuery.where(criteriaBuilder.and(userPredicate, statePredicate, datePredicate, orPredicate));
+		// CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+		// CriteriaQuery<UserOrderDTO> criteriaQuery =
+		// criteriaBuilder.createQuery(UserOrderDTO.class);
 
-		criteriaQuery.where(criteriaBuilder.and(userPredicate, statePredicate, datePredicate, searchPredicate));
+		// Root<Order> orderRoot = criteriaQuery.from(Order.class);
+		// Join<Order, OrderDetails> odJoin = orderRoot.join("orderDetails");
+		// Join<OrderDetails, RoomAvailableDate> radJoin =
+		// odJoin.join("roomAvailableDate");
+		// Join<RoomAvailableDate, Room> roomJoin = radJoin.join("room");
+		// Join<Order, State> stateJoin = orderRoot.join("state");
+		// Join<Order, User> userJoin = orderRoot.join("user");
+		// Join<Room, Provider> providerJoin = roomJoin.join("provider");
+		// Join<Provider, User> providerUserNameJoin = providerJoin.join("user");
+		// Join<Room, City> cityJoin = roomJoin.join("city");
 
-		// 分頁查詢
+		// String search = (searchInput != null && !searchInput.trim().isEmpty()) ? "%"
+		// + searchInput.trim() + "%" : null;
+
+		// criteriaQuery.select(criteriaBuilder.construct(
+		// UserOrderDTO.class,
+		// orderRoot.get("orderId").alias("orderId"),
+		// radJoin.get("availableDates").alias("availableDates"),
+		// odJoin.get("checkInDate").alias("checkInDate"),
+		// odJoin.get("purchasedPrice").alias("purchasedPrice"),
+		// providerUserNameJoin.get("name").alias("providerName"),
+		// roomJoin.get("roomName").alias("roomName"),
+		// stateJoin.get("stateContent").alias("state")));
+
+		// Predicate userPredicate = criteriaBuilder.equal(userJoin.get("userId"),
+		// userId);
+
+		// Predicate statePredicate = stateId != null
+		// ? criteriaBuilder.equal(stateJoin.get("stateId"), stateId)
+		// : criteriaBuilder.conjunction();
+
+		// Predicate datePredicate = criteriaBuilder.conjunction();
+		// if (startDate != null) {
+		// datePredicate = criteriaBuilder.and(datePredicate,
+		// criteriaBuilder.greaterThanOrEqualTo(orderRoot.get("date"), startDate));
+		// }
+		// if (endDate != null) {
+		// datePredicate = criteriaBuilder.and(datePredicate,
+		// criteriaBuilder.lessThanOrEqualTo(orderRoot.get("date"), endDate));
+		// }
+
+		// Predicate searchPredicate = criteriaBuilder.conjunction();
+		// if (search != null) {
+		// searchPredicate = criteriaBuilder.or(
+		// criteriaBuilder.like(roomJoin.get("roomName"), search),
+		// criteriaBuilder.like(cityJoin.get("cityName"), search),
+		// criteriaBuilder.like(roomJoin.get("roomAddr"), search),
+		// criteriaBuilder.like(roomJoin.get("roomContent"), search));
+		// }
+
+		// criteriaQuery.where(criteriaBuilder.and(userPredicate, statePredicate,
+		// datePredicate, searchPredicate));
+		// List<UserOrderDTO> results =
+		// entityManager.createQuery(criteriaQuery).getResultList();
+		// System.out.println("結果1" + results);
+		// // 分頁查詢
 		TypedQuery<UserOrderDTO> query = entityManager.createQuery(criteriaQuery);
 		query.setFirstResult(pageNumber * pageSize);
 		query.setMaxResults(pageSize);
 		List<UserOrderDTO> results = query.getResultList();
+		System.out.println("結果2" + results);
 
 		// 計數查詢
 		CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
 		Root<Order> countRoot = countQuery.from(Order.class);
+
+		// 重建計數查詢的條件
+		Join<Order, State> countStateJoin = countRoot.join("state");
+		Join<Order, User> countUserJoin = countRoot.join("user");
+
+		List<Predicate> countPredicates = new ArrayList<>();
+		countPredicates.add(criteriaBuilder.equal(countUserJoin.get("userId"), userId));
+
+		if (stateId != null) {
+			countPredicates.add(criteriaBuilder.equal(countStateJoin.get("stateId"), stateId));
+		}
+
+		if (startDate != null) {
+			countPredicates.add(criteriaBuilder.greaterThanOrEqualTo(countRoot.get("date"), startDate));
+		}
+		if (endDate != null) {
+			countPredicates.add(criteriaBuilder.lessThanOrEqualTo(countRoot.get("date"), endDate));
+		}
+
+		if (search != null) {
+			Join<Order, OrderDetails> countOdJoin = countRoot.join("orderDetails");
+			Join<OrderDetails, RoomAvailableDate> countRadJoin = countOdJoin.join("roomAvailableDate");
+			Join<RoomAvailableDate, Room> countRoomJoin = countRadJoin.join("room");
+			Join<Room, City> countCityJoin = countRoomJoin.join("city");
+
+			countPredicates.add(criteriaBuilder.or(
+					criteriaBuilder.like(countRoomJoin.get("roomName"), search),
+					criteriaBuilder.like(countCityJoin.get("cityName"), search),
+					criteriaBuilder.like(countRoomJoin.get("roomAddr"), search),
+					criteriaBuilder.like(countRoomJoin.get("roomContent"), search)));
+		}
+
 		countQuery.select(criteriaBuilder.count(countRoot));
-		countQuery.where(criteriaQuery.getRestriction());
+		countQuery.where(criteriaBuilder.and(countPredicates.toArray(new Predicate[0])));
 		Long totalElements = entityManager.createQuery(countQuery).getSingleResult();
 
 		return new PageImpl<>(results, PageRequest.of(pageNumber, pageSize), totalElements);
