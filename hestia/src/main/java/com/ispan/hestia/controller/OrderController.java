@@ -54,6 +54,8 @@ public class OrderController {
 
                 Integer stateId = obj.isNull("stateId") ? null : obj.getInt("stateId");
 
+                String searchInput = obj.isNull("searchInput") ? null : obj.getString("searchInput");
+
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
                 Date startSearchDate = obj.isNull("startSearchDate") ? null
@@ -64,7 +66,7 @@ public class OrderController {
                                 formatter).atStartOfDay());
 
                 List<UserOrderDTO> result = orderService.findUserOrders(startSearchDate, endSearchDate, userId,
-                        stateId);
+                        stateId, searchInput);
 
                 return new OrderReponse(true, "查詢成功", null, result, null, null);
             } catch (Exception e) {
@@ -92,8 +94,18 @@ public class OrderController {
         }
 
         @GetMapping("/refund/check/{id}")
-        public OrderReponse findOrdersUser(@PathVariable("id") Integer orderId) {
+        public OrderReponse refundableCheckOrder(@PathVariable("id") Integer orderId) {
             boolean refundable = orderService.checkIfAutoRefundable(orderId);
+            String mssg = "不在退款區間內，可以手動申請退款";
+            if (refundable) {
+                mssg = "在退款區間內，可以直接退款";
+            }
+            return new OrderReponse(refundable, mssg, null, null, null, null);
+        }
+
+        @GetMapping("/refund/check/orderDetails/{id}")
+        public OrderReponse refundableCheckOrderDetails(@PathVariable("id") Integer orderDetailsId) {
+            boolean refundable = orderDetailsService.checkIfAutoRefundable(orderDetailsId);
             String mssg = "不在退款區間內，可以手動申請退款";
             if (refundable) {
                 mssg = "在退款區間內，可以直接退款";
@@ -109,6 +121,27 @@ public class OrderController {
                 Integer orderId = obj.isNull("orderId") ? null : obj.getInt("orderId");
 
                 boolean result = orderService.modifyOrderState(orderId, 38, 35);
+
+                if (result) {
+                    mssg = "退款成功";
+                }
+
+                return new OrderReponse(true, mssg, null, null, null, null);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new OrderReponse(false, mssg, null, null, null, null);
+            }
+        }
+
+        @PostMapping("/refund/autoRefund/Details")
+        public OrderReponse autoRefundDetails(@RequestBody String entity) {
+            String mssg = "退款失敗";
+            try {
+                JSONObject obj = new JSONObject(entity);
+                Integer orderDetailsId = obj.isNull("orderDetailsId") ? null : obj.getInt("orderDetailsId");
+
+                boolean result = orderDetailsService.modifyOrderDetailsState(orderDetailsId, 35);
 
                 if (result) {
                     mssg = "退款成功";
@@ -143,6 +176,27 @@ public class OrderController {
             }
         }
 
+        @PostMapping("/refund/applyRefund/Details")
+        public OrderReponse manualRefundOrderDetails(@RequestBody String entity) {
+            String mssg = "退款申請送出失敗";
+            try {
+                JSONObject obj = new JSONObject(entity);
+                Integer orderDetailsId = obj.isNull("orderDetailsId") ? null : obj.getInt("orderDetailsId");
+
+                boolean result = orderDetailsService.modifyOrderDetailsState(orderDetailsId, 34);
+
+                if (result) {
+                    mssg = "退款申請成功送出";
+                }
+
+                return new OrderReponse(result, mssg, null, null, null, null);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new OrderReponse(false, mssg, null, null, null, null);
+            }
+        }
+
     }
 
     @RestController
@@ -152,7 +206,10 @@ public class OrderController {
         @Autowired
         private OrderService orderService;
 
-        @PostMapping("/refundAccepted")
+        @Autowired
+        private OrderDetailService orderDetailService;
+
+        @PostMapping("/refund/order/accepted")
         public OrderReponse manualAcceptingRefund(@RequestBody String entity) {
             String mssg = "無法成功接受退款";
             try {
@@ -172,7 +229,27 @@ public class OrderController {
             }
         }
 
-        @PostMapping("/refundDeclined")
+        @PostMapping("/refund/details/accepted")
+        public OrderReponse manualAcceptingRefundDetails(@RequestBody String entity) {
+            String mssg = "無法成功接受退款";
+            try {
+                JSONObject obj = new JSONObject(entity);
+                Integer orderDetailsId = obj.isNull("orderDetailsId") ? null : obj.getInt("orderDetailsId");
+
+                boolean result = orderDetailService.modifyOrderDetailsState(orderDetailsId, 35);
+
+                if (result) {
+                    mssg = "成功接受退款";
+                }
+
+                return new OrderReponse(result, mssg, null, null, null, null);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new OrderReponse(false, mssg, null, null, null, null);
+            }
+        }
+
+        @PostMapping("/refund/order/declined")
         public OrderReponse declinedTheRefund(@RequestBody String entity) {
             String mssg = "退款拒絕失敗";
             try {
@@ -180,6 +257,28 @@ public class OrderController {
                 Integer orderId = obj.isNull("orderId") ? null : obj.getInt("orderId");
 
                 boolean result = orderService.manualRefundDeclined(orderId, 34, 38);
+
+                if (result) {
+                    mssg = "成功拒絕退款";
+                }
+
+                return new OrderReponse(result, mssg, null, null, null, null);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new OrderReponse(false, mssg, null, null, null, null);
+            }
+
+        }
+
+        @PostMapping("/refund/details/declined")
+        public OrderReponse declinedTheRefundDetails(@RequestBody String entity) {
+            String mssg = "退款拒絕失敗";
+            try {
+                JSONObject obj = new JSONObject(entity);
+                Integer orderDetailsId = obj.isNull("orderDetailsId") ? null : obj.getInt("orderDetailsId");
+
+                boolean result = orderDetailService.modifyOrderDetailsState(orderDetailsId, 38);
 
                 if (result) {
                     mssg = "成功拒絕退款";
@@ -234,11 +333,16 @@ public class OrderController {
                 Date endSearchDate = obj.isNull("endSearchDate") ? null
                         : java.sql.Timestamp.valueOf(LocalDate.parse(obj.getString("endSearchDate"),
                                 formatter).atStartOfDay());
+                System.out.println("沒有壞掉");
                 return new OrderReponse(true, "查詢成功",
                         orderService.getMonthlySalesAndOrders(startSearchDate, endSearchDate, providerId), null, null,
                         null);
+
             } catch (Exception e) {
+                System.out.println("壞掉");
+                e.printStackTrace();
                 return new OrderReponse(false, "查詢失敗", null, null, null, null);
+
             }
 
         }

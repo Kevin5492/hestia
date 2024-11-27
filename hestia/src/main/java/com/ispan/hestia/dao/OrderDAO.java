@@ -14,7 +14,8 @@ public interface OrderDAO {
 
 	public List<Object[]> getMonthlySalesAndOrdersByOrderDate(Date startDate, Date endDate, Integer providerId);
 
-	public List<UserOrderDTO> findOrderForUser(Date startDate, Date endDate, Integer userId, Integer stateId);
+	public List<UserOrderDTO> findOrderForUser(Date startDate, Date endDate, Integer userId, Integer stateId,
+			String searchInput);
 
 	public List<ProviderDTO> findOrderForProvider(Date startDate, Date endDate, Integer providerId, Integer stateId);
 

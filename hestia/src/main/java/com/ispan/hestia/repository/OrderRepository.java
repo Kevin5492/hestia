@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ispan.hestia.dao.OrderDAO;
+import com.ispan.hestia.dto.SalesNumbersDTO;
 import com.ispan.hestia.model.Order;
 import com.ispan.hestia.model.State;
 
@@ -24,6 +25,19 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, OrderDAO
 	int updateUnpaidOrderState(@Param("timeMinusTwoMinutes") Date timeMinusTwoMinutes,
 			@Param("preState") State preState,
 			@Param("postState") State postState);
+
+	@Query("SELECT ('Total', SUM(od.purchasedPrice), COUNT(od.orderRoomId)) " +
+			"FROM Order o " +
+			"JOIN o.orderDetails od " +
+			"JOIN od.roomAvailableDate rad " +
+			"JOIN rad.room r " +
+			"JOIN r.provider p " +
+			"JOIN od.state s " +
+			"WHERE s.stateId = 38 AND p.providerId = :providerId " +
+			"AND rad.availableDates BETWEEN :startDate AND :endDate")
+	public List<Object[]> getTotalSalesAndOrders(@Param("startDate") Date startDate,
+			@Param("endDate") Date endDate,
+			@Param("providerId") Integer providerId);
 	// @Query()
 	// public void completeThePurchase(Integer orderId);
 

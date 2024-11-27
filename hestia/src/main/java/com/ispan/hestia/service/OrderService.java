@@ -3,16 +3,14 @@ package com.ispan.hestia.service;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ispan.hestia.dto.OrderDetailsDTO;
 import com.ispan.hestia.dto.ProviderDTO;
 import com.ispan.hestia.dto.SalesNumbersDTO;
+import com.ispan.hestia.dto.SalesNumbersSumDTO;
 import com.ispan.hestia.dto.UserOrderDTO;
 import com.ispan.hestia.model.Order;
 import com.ispan.hestia.model.OrderDetails;
@@ -152,13 +150,26 @@ public class OrderService {
 	}
 
 	@Transactional // 按照月份提供收入報表
-	public List<SalesNumbersDTO> getMonthlySalesAndOrders(Date startDate, Date endDate, Integer providerId) {
-		return orderRepo.getMonthlySalesAndOrdersAvailableDate(startDate, endDate, providerId);
+	public SalesNumbersSumDTO getMonthlySalesAndOrders(Date startDate, Date endDate, Integer providerId) {
+
+		List<SalesNumbersDTO> salesNumbers = orderRepo.getMonthlySalesAndOrdersAvailableDate(startDate, endDate,
+				providerId);
+		SalesNumbersSumDTO salesNumbersSumDTO = null;
+		for (Object[] obj : orderRepo.getTotalSalesAndOrders(startDate, endDate,
+				providerId)) {
+			salesNumbersSumDTO = new SalesNumbersSumDTO(salesNumbers, (Long) obj[1], (Long) obj[2]);
+		}
+
+		// salesNumbers.add(orderRepo.getTotalSalesAndOrders(startDate, endDate,
+		// providerId));
+
+		return salesNumbersSumDTO;
 	}
 
 	@Transactional // 查詢使用者訂單
-	public List<UserOrderDTO> findUserOrders(Date startDate, Date endDate, Integer userId, Integer stateId) {
-		return orderRepo.findOrderForUser(startDate, endDate, userId, stateId);
+	public List<UserOrderDTO> findUserOrders(Date startDate, Date endDate, Integer userId, Integer stateId,
+			String searchInput) {
+		return orderRepo.findOrderForUser(startDate, endDate, userId, stateId, searchInput);
 	}
 
 	@Transactional // 查詢房東訂單

@@ -7,6 +7,7 @@ import com.ispan.hestia.dao.OrderDAO;
 import com.ispan.hestia.dto.ProviderDTO;
 import com.ispan.hestia.dto.SalesNumbersDTO;
 import com.ispan.hestia.dto.UserOrderDTO;
+import com.ispan.hestia.model.City;
 import com.ispan.hestia.model.Order;
 import com.ispan.hestia.model.OrderDetails;
 import com.ispan.hestia.model.Provider;
@@ -115,7 +116,8 @@ public class OrderDAOImpl implements OrderDAO {
 	}
 
 	@Override
-	public List<UserOrderDTO> findOrderForUser(Date startDate, Date endDate, Integer userId, Integer stateId) { // List<Object[]>
+	public List<UserOrderDTO> findOrderForUser(Date startDate, Date endDate, Integer userId, Integer stateId,
+			String searchInput) { // List<Object[]>
 		// 會回傳userID
 		// availableDates
 		// checkInDate
@@ -131,6 +133,7 @@ public class OrderDAOImpl implements OrderDAO {
 		Join<Order, User> userJoin = orderRoot.join("user");
 		Join<Room, Provider> providerJoin = roomJoin.join("provider");
 		Join<Provider, User> providerUserNameJoin = providerJoin.join("user");
+		Join<Room, City> cityJoin = roomJoin.join("city");
 
 		// criteriaQuery.select(criteriaBuilder.construct(null));
 		// criteriaQuery.multiselect(orderRoot.get("orderId"),
@@ -140,7 +143,7 @@ public class OrderDAOImpl implements OrderDAO {
 		// providerUserNameJoin.get("name").alias("providerName"),
 		// roomJoin.get("roomName"),
 		// stateJoin.get("stateContent").alias("state"));
-
+		String search = "%" + searchInput + "%";
 		criteriaQuery.select(criteriaBuilder.construct(
 				UserOrderDTO.class,
 				orderRoot.get("orderId").alias("orderId"),
@@ -155,6 +158,17 @@ public class OrderDAOImpl implements OrderDAO {
 
 		Predicate statePredicate = criteriaBuilder.conjunction();
 		Predicate datePredicate = criteriaBuilder.conjunction(); // 初始化為真條件
+		Predicate roomNamePredicate = criteriaBuilder.conjunction();
+		Predicate cityNamePredicate = criteriaBuilder.conjunction();
+		Predicate addressPredicate = criteriaBuilder.conjunction();
+		Predicate roomContentPredicate = criteriaBuilder.conjunction();
+
+		if (searchInput != null) {
+			roomNamePredicate = criteriaBuilder.like(roomJoin.get("roomName"), search);
+			addressPredicate = criteriaBuilder.like(roomJoin.get("roomAddr"), search);
+			roomContentPredicate = criteriaBuilder.like(roomJoin.get("roomContent"), search);
+			cityNamePredicate = criteriaBuilder.like(cityJoin.get("cityName"), search);
+		}
 
 		if (stateId != null) {
 			statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), stateId);
@@ -170,7 +184,13 @@ public class OrderDAOImpl implements OrderDAO {
 			datePredicate = criteriaBuilder.and(datePredicate,
 					criteriaBuilder.lessThanOrEqualTo(orderRoot.get("date"), endDate));
 		}
-		criteriaQuery.where(criteriaBuilder.and(userPredicate, statePredicate, datePredicate));
+		Predicate orPredicate = criteriaBuilder.or(
+				roomNamePredicate,
+				cityNamePredicate,
+				addressPredicate,
+				roomContentPredicate);
+
+		criteriaQuery.where(criteriaBuilder.and(userPredicate, statePredicate, datePredicate, orPredicate));
 		// criteriaQuery.groupBy(orderRoot.get("orderId"));
 		return entityManager.createQuery(criteriaQuery).getResultList();
 	}
