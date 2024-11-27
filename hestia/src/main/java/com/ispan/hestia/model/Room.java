@@ -79,11 +79,11 @@ public class Room implements Serializable {
 	@JoinColumn(name = "refund_policy_id", referencedColumnName = "refund_policy_id")
 	private RefundPolicy refundPolicy;
 
-	@Column(name = "chechin_time")
-	private Double chechinTime;
+	@Column(name = "checkin_time")
+	private Double checkinTime;
 
-	@Column(name = "chechout_time")
-	private Double chechoutTime;
+	@Column(name = "checkout_time")
+	private Double checkoutTime;
 
 	@OneToMany(cascade = CascadeType.ALL, mappedBy = "room")
 	private Set<Favorite> favorite = new HashSet<>();

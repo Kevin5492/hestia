@@ -79,8 +79,8 @@ public class User implements Serializable {
 	@JsonManagedReference
 	private Provider provider;
 
-	@OneToOne(fetch = FetchType.LAZY, mappedBy = "user")
-	private Cart cart;
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+	private Set<CartRoom> cartRoom = new HashSet<>();
 
 	@OneToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE }, mappedBy = "user")
 	private Set<Order> order = new HashSet<>();

@@ -29,7 +29,7 @@ public interface OrderDetailsRepository extends JpaRepository<OrderDetails, Inte
         @Query("select od.order.date from OrderDetails od where orderRoomId = :orderRoomId")
         public Date checkOrderDate(@Param("orderRoomId") int orderRoomId);
 
-        @Query("SELECT new com.ispan.hestia.dto.OrderDetailsDTO(o.id, od.checkInDate, r.roomName, od.purchasedPrice, rad.availableDates as orderedDate, r.singleBed, r.doubleBed, r.bedroomCount, r.chechinTime, r.chechoutTime) "
+        @Query("SELECT new com.ispan.hestia.dto.OrderDetailsDTO(o.id, od.checkInDate, r.roomName, od.purchasedPrice, rad.availableDates as orderedDate, r.singleBed, r.doubleBed, r.bedroomCount, r.checkinTime, r.checkoutTime) "
                         +
                         "FROM Order o JOIN o.orderDetails od " +
                         "JOIN od.roomAvailableDate rad " +
