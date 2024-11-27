@@ -1,7 +1,12 @@
 package com.ispan.hestia.dao.impl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import com.ispan.hestia.dao.OrderDAO;
 import com.ispan.hestia.dto.ProviderDTO;
@@ -18,6 +23,7 @@ import com.ispan.hestia.model.User;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -77,25 +83,85 @@ public class OrderDAOImpl implements OrderDAO {
 		return entityManager.createQuery(criteriaQuery).getResultList();
 	}
 
+	// @Override
+	// public List<Object[]> getMonthlySalesAndOrdersByOrderDate(Date startDate,
+	// Date endDate, Integer providerId) {
+	// CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+	// CriteriaQuery<Object[]> criteriaQuery =
+	// criteriaBuilder.createQuery(Object[].class);
+	// Root<Order> orderRoot = criteriaQuery.from(Order.class);
+	// Join<Order, OrderDetails> odJoin = orderRoot.join("orderDetails");
+	// Join<OrderDetails, RoomAvailableDate> radJoin =
+	// odJoin.join("roomAvailableDate");
+	// Join<RoomAvailableDate, Room> roomJoin = radJoin.join("room");
+	// Join<Room, Provider> providerJoin = roomJoin.join("provider");
+	// Join<Order, State> stateJoin = orderRoot.join("state");
+
+	// Expression<String> monthExpression = criteriaBuilder.function("FORMAT",
+	// String.class, orderRoot.get("date"),
+	// criteriaBuilder.literal("yyyy-MM"));
+	// criteriaQuery.multiselect(monthExpression.alias("month"),
+	// criteriaBuilder.sum(odJoin.get("purchasedPrice")).alias("totalSales"),
+	// criteriaBuilder.count(odJoin.get("orderRoomId")).alias("totalOrders"));
+	// Predicate statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"),
+	// 38);
+	// Predicate providerPredicate =
+	// criteriaBuilder.equal(providerJoin.get("providerId"), providerId);
+	// Predicate datePredicate = criteriaBuilder.conjunction(); // 初始條件為 TRUE
+	// if (startDate != null) {
+	// datePredicate = criteriaBuilder.and(datePredicate,
+	// criteriaBuilder.greaterThanOrEqualTo(orderRoot.get("date"), startDate));
+	// }
+	// if (endDate != null) {
+	// datePredicate = criteriaBuilder.and(datePredicate,
+	// criteriaBuilder.lessThanOrEqualTo(orderRoot.get("date"), endDate));
+	// }
+	// criteriaQuery.where(criteriaBuilder.and(datePredicate, providerPredicate));
+
+	// criteriaQuery.groupBy(monthExpression);
+
+	// // 按月份排序
+	// criteriaQuery.orderBy(criteriaBuilder.asc(monthExpression));
+
+	// // 執行查詢並返回結果
+	// return entityManager.createQuery(criteriaQuery).getResultList();
+	// }
+
 	@Override
-	public List<Object[]> getMonthlySalesAndOrdersByOrderDate(Date startDate, Date endDate, Integer providerId) {
+	public Page<UserOrderDTO> findOrderForUserPage(Date startDate, Date endDate, Integer userId, Integer stateId,
+			String searchInput, Integer pageNumber, Integer pageSize) {
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-		CriteriaQuery<Object[]> criteriaQuery = criteriaBuilder.createQuery(Object[].class);
+		CriteriaQuery<UserOrderDTO> criteriaQuery = criteriaBuilder.createQuery(UserOrderDTO.class);
+
 		Root<Order> orderRoot = criteriaQuery.from(Order.class);
 		Join<Order, OrderDetails> odJoin = orderRoot.join("orderDetails");
 		Join<OrderDetails, RoomAvailableDate> radJoin = odJoin.join("roomAvailableDate");
 		Join<RoomAvailableDate, Room> roomJoin = radJoin.join("room");
-		Join<Room, Provider> providerJoin = roomJoin.join("provider");
 		Join<Order, State> stateJoin = orderRoot.join("state");
+		Join<Order, User> userJoin = orderRoot.join("user");
+		Join<Room, Provider> providerJoin = roomJoin.join("provider");
+		Join<Provider, User> providerUserNameJoin = providerJoin.join("user");
+		Join<Room, City> cityJoin = roomJoin.join("city");
 
-		Expression<String> monthExpression = criteriaBuilder.function("FORMAT", String.class, orderRoot.get("date"),
-				criteriaBuilder.literal("yyyy-MM"));
-		criteriaQuery.multiselect(monthExpression.alias("month"),
-				criteriaBuilder.sum(odJoin.get("purchasedPrice")).alias("totalSales"),
-				criteriaBuilder.count(odJoin.get("orderRoomId")).alias("totalOrders"));
-		Predicate statePredicate = criteriaBuilder.equal(stateJoin.get("stateId"), 38);
-		Predicate providerPredicate = criteriaBuilder.equal(providerJoin.get("providerId"), providerId);
-		Predicate datePredicate = criteriaBuilder.conjunction(); // 初始條件為 TRUE
+		String search = (searchInput != null && !searchInput.trim().isEmpty()) ? "%" + searchInput.trim() + "%" : null;
+
+		criteriaQuery.select(criteriaBuilder.construct(
+				UserOrderDTO.class,
+				orderRoot.get("orderId").alias("orderId"),
+				radJoin.get("availableDates").alias("availableDates"),
+				odJoin.get("checkInDate").alias("checkInDate"),
+				odJoin.get("purchasedPrice").alias("purchasedPrice"),
+				providerUserNameJoin.get("name").alias("providerName"),
+				roomJoin.get("roomName").alias("roomName"),
+				stateJoin.get("stateContent").alias("state")));
+
+		Predicate userPredicate = criteriaBuilder.equal(userJoin.get("userId"), userId);
+
+		Predicate statePredicate = stateId != null
+				? criteriaBuilder.equal(stateJoin.get("stateId"), stateId)
+				: criteriaBuilder.conjunction();
+
+		Predicate datePredicate = criteriaBuilder.conjunction();
 		if (startDate != null) {
 			datePredicate = criteriaBuilder.and(datePredicate,
 					criteriaBuilder.greaterThanOrEqualTo(orderRoot.get("date"), startDate));
@@ -104,15 +170,33 @@ public class OrderDAOImpl implements OrderDAO {
 			datePredicate = criteriaBuilder.and(datePredicate,
 					criteriaBuilder.lessThanOrEqualTo(orderRoot.get("date"), endDate));
 		}
-		criteriaQuery.where(criteriaBuilder.and(datePredicate, providerPredicate));
 
-		criteriaQuery.groupBy(monthExpression);
+		Predicate searchPredicate = criteriaBuilder.conjunction();
+		if (search != null) {
+			searchPredicate = criteriaBuilder.or(
+					criteriaBuilder.like(roomJoin.get("roomName"), search),
+					criteriaBuilder.like(cityJoin.get("cityName"), search),
+					criteriaBuilder.like(roomJoin.get("roomAddr"), search),
+					criteriaBuilder.like(roomJoin.get("roomContent"), search));
+		}
 
-		// 按月份排序
-		criteriaQuery.orderBy(criteriaBuilder.asc(monthExpression));
+		criteriaQuery.where(criteriaBuilder.and(userPredicate, statePredicate, datePredicate, searchPredicate));
 
-		// 執行查詢並返回結果
-		return entityManager.createQuery(criteriaQuery).getResultList();
+		// 分頁查詢
+		TypedQuery<UserOrderDTO> query = entityManager.createQuery(criteriaQuery);
+		query.setFirstResult(pageNumber * pageSize);
+		query.setMaxResults(pageSize);
+		List<UserOrderDTO> results = query.getResultList();
+
+		// 計數查詢
+		CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
+		Root<Order> countRoot = countQuery.from(Order.class);
+		countQuery.select(criteriaBuilder.count(countRoot));
+		countQuery.where(criteriaQuery.getRestriction());
+		Long totalElements = entityManager.createQuery(countQuery).getSingleResult();
+
+		return new PageImpl<>(results, PageRequest.of(pageNumber, pageSize), totalElements);
+
 	}
 
 	@Override
